@@ -3,7 +3,7 @@ from .settings import AWS_REGION, MODEL_ENDPOINT_NAME, AWS_API_GATEWAY
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from requests_toolbelt import sessions
-
+## All of this is moving to the API and will be deleted soon
 class Model():
     # Default to env var if not set
     def __init__(self, endpoint=MODEL_ENDPOINT_NAME(), aws_region=AWS_REGION()):
