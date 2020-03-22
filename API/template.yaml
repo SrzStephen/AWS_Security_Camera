@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  TestingFns
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref EventsTable
+        BUCKET_NAME: !Ref S3Bucket
+        REGION: !Ref AWS::Region
+        USERS_BUCKET: !Ref UsersTable
+
+  Api:
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Public
+      VersioningConfiguration:
+        Status: Enabled
+      AllowOrigin: "*"
+
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: PROVISIONED
+
+  ClassifyImage:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: image_classify/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        ClassifyImage:
+          Type: Api
+          Properties:
+            Path: /classify
+            Method: post
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref S3Bucket
+
+  UploadVideo:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: upload_video/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        UploadVideo:
+          Type: Api
+          Properties:
+            Path: /uploadvideo
+            Method: post
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref S3Bucket
+        - DynamoDBWritePolicy:
+            TableName: !Ref EventsTable
+
+  GetItems:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: get_items_for_device/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /items/{id}/{from_timestamp}
+            Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref EventsTable
