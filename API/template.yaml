@@ -59,24 +59,6 @@ Resources:
         - S3WritePolicy:
             BucketName: !Ref S3Bucket
 
-  UploadVideo:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: upload_video/
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Events:
-        UploadVideo:
-          Type: Api
-          Properties:
-            Path: /uploadvideo
-            Method: post
-      Policies:
-        - S3WritePolicy:
-            BucketName: !Ref S3Bucket
-        - DynamoDBWritePolicy:
-            TableName: !Ref EventsTable
-
   GetItems:
     Type: AWS::Serverless::Function
     Properties:

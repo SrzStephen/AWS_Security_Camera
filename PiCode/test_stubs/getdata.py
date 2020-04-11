@@ -1,3 +1,5 @@
+# Test function for docker container to check that pi is set up properly
+
 from picamera import PiCamera
 from time import sleep
 if __name__ == "__main__":

@@ -2,13 +2,14 @@ import requests
 from base64 import b64encode
 from datetime import datetime
 from json import dumps
+
 if __name__ == "__main__":
-    with open('data/foo.jpeg','rb') as fp:
+    config = object()
+    config.gateway_url = "1234"
+    with open('data/penguin.png','rb') as fp:
         image_data = fp.read()
     image_data = b64encode(image_data).decode('utf-8')
-    data = dict(
-        image="12345"
-    )
-    response = requests.post("https://postman-echo.com/post")
-    requests.get(url="http://127.0.0.1:3000/classify")
-    response = requests.post(url="http://127.0.0.1:3000/classify", data=dumps(data))
+
+    data = dict(image=image_data, runtime=1234, device_name="DEVICE_NAME",
+                person_threshold=0.532, mask_treshhold=0.5432)
+    requests.post(f"{config.gateway_url}/classify", data=dumps(data))

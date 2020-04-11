@@ -4,11 +4,10 @@ import time
 from threading import Thread
 from attentive import quitevent
 import cv2
-from io import BytesIO
-from base64 import b64encode
+
 
 class Camera(PiCamera):
-    def __init__(self, camera_num: int,invert:bool):
+    def __init__(self, camera_num: int, invert: bool):
         PiCamera.__init__(self, camera_num=camera_num, resolution=(1024, 1024))
         if invert:
             self.rotation = 180
@@ -51,23 +50,3 @@ class Camera(PiCamera):
         frame2_gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         # Todo, make sure this is % Pixels
         return cv2.absdiff(frame1_gray, frame2_gray)
-
-
-    def get_video(self):
-        # stop the capture thread
-        self.stop_polling()
-        while not self.stopped:
-            time.sleep(0.001)
-        byte_buffer = BytesIO()
-        byte_buffer.seek(0)
-        self.start_recording(output=byte_buffer)
-        self.wait_recording(30)
-        self.stop_recording()
-        # restart the capture thread
-        self.start_polling()
-        # return as a b64 encoded string
-        return byte_buffer
-
-    @staticmethod
-    def video_to_b64(video_byte_buffer:BytesIO):
-        return b64encode(video_byte_buffer.getvalue()).decode('utf-u')

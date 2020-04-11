@@ -20,3 +20,14 @@ AWS_API_GATEWAY = Knob(env_name="AWS_API_GATEWAY", default="Foo/bar/baz", descri
 
 MIN_PERCENTAGE_DIFF = Knob(env_name="MIN_PERCENTAGE_DIFF", default=10,
                            description="Minimum difference between frames to send")
+PERSON_PERCENTAGE = Knob(env_name="PERSON_PERCENTAGE", default=50,
+                         description="Minimum probability to consider it being a person")
+
+NO_MASK_THRESHOLD = Knob(env_name="NO_MASK_THRESHOLD", default=50, description="Minimum threshold to measure no mask.")
+
+OPEN_TIME = Knob(env_name="OPEN_TIME", default=10, description="Time to open door in seconds.")
+
+DOOR_OUT_PIN = Knob(env_name="DOOR_OUT_PIN", default=23, description="Pin the door latch is connected to")
+
+DOOR_OVERRIDE_BUTTON = Knob(env_name="DOOR_OVERRIDE_BUTTON", default=24,
+                            description="Pin that the override button is connected to")

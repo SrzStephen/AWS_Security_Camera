@@ -2,10 +2,16 @@ from attentive import quitevent
 from .camera import Camera
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from requests_toolbelt import sessions
 from requests import Session
-from numpy import array
-# TODO typing
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+from logging import basicConfig, getLogger
+import RPi.GPIO as GPIO
+from json import dumps
+from time import sleep
+
+logger = getLogger(__name__)
+
+
 def data_generator(cam_num, invert, threshold):
     images = []
     last_image = 0
@@ -27,6 +33,7 @@ def data_generator(cam_num, invert, threshold):
                 else:
                     last_image = 0
 
+
 def session_with_retry_policy() -> Session:
     http = Session()
     retry_strategy = Retry(
@@ -38,3 +45,32 @@ def session_with_retry_policy() -> Session:
     adaptor = HTTPAdapter(max_retries=retry_strategy)
     http.adapters = {"https://": adaptor, "http://": adaptor}
     return http
+
+
+def set_verbosity(verbose: int):
+    log_int = {'4': DEBUG, '3': INFO, '2': WARNING, '1': ERROR, '0': CRITICAL}
+    # The most verbose you can go is debug
+    if verbose > len(log_int):
+        basicConfig(level=DEBUG)
+    else:
+        if str(verbose) not in log_int.keys():
+            raise ValueError(f"Invalid log level {verbose}")
+        basicConfig(level=log_int[str(verbose)])
+    # get some chatty logs to chill for a bit.
+    getLogger("PIL").setLevel(WARNING)
+    getLogger("boto3").setLevel(WARNING)
+
+
+def open_door(pin, endpoint, open_time, device_name):
+    logger.debug(f"Triggering door opening on pin {pin}")
+    GPIO.output(pin, 1)
+    sleep(open_time)
+    logger.debug(f"Door closing")
+    GPIO.output(pin, 0)
+    try:
+        sess = session_with_retry_policy()
+        data = dict(device_name=device_name)
+        sess.post("/override", data=dumps(data))
+    except Exception as e:
+        logger.debug(e)
+        logger.warning(f"Something went wrong when trying to open the door on pin {pin}. Check debug log.")
