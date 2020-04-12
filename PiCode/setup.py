@@ -6,9 +6,9 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name="AWS_Security_Cam",
+    name="MaskCam",
     version="1.0.0",
-    description="AWS security Camera",
+    description="AWS Mask Detection Camera",
     long_description_content_type="text/markdown",
     url="TODO",
     author="Stephen Mott, Rico Beti",
@@ -21,6 +21,6 @@ setup(
     python_requires=">=3.5",
     platforms="Raspbian",
     entry_points={'console_scripts': [
-        'seccam = seccam.cli:cli'
+        'MaskCam = maskcam.cli:cli'
     ]}
 )

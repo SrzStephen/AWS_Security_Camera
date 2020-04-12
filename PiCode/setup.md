@@ -46,6 +46,21 @@ arn:aws:sagemaker:us-east-2:057799348421:model-package/sassy-anthropos-05-28e340
 ```
 
 
+# request limits 
+https://docs.aws.amazon.com/general/latest/gr/sagemaker.html
+ml.p3.2xlarge instances	
+https://udacity.zendesk.com/hc/en-us/articles/360037696812-How-do-I-request-a-limit-increase-for-my-p2-xlarge-instance-
+
+```
+https://docs.aws.amazon.com/sagemaker/latest/dg/appendix.html
+```
+
+
+
+
+
+
+
 
 References
 
