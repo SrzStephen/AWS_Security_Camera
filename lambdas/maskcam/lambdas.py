@@ -364,6 +364,9 @@ class FetchStatsLambda(Lambda):
             password=settings.DB_PASSWORD,
         )
 
+        cameras = repo.get_all_cameras()
+        stats = repo.get_stats()
+
         data = {
             'cameras': [
                 {
@@ -374,13 +377,14 @@ class FetchStatsLambda(Lambda):
                     'violationCount': c['violation_count'],
                     'overrideCount': c['override_count'],
                 }
-                for c in repo.get_all_cameras()
+                for c in cameras
             ],
 
             # TODO: Implement.
             'activityHistory': {
-                'detections': [0, 0, 0, 0, 0, 0, 0],
-                'rates': [0, 0, 0, 0, 0, 0, 0],
+                'compliant': stats['compliant_count'],
+                'violation': stats['violation_count'],
+                'override': stats['override_count'],
             }
         }
 
