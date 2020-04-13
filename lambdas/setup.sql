@@ -11,7 +11,8 @@ CREATE TABLE detections
     recorded_on timestamp with time zone NOT NULL,
     min_confidence  double precision     NOT NULL,
     people_in_frame integer              NOT NULL,
-    activity character varying(255)      NOT NULL
+    activity character varying(255)      NOT NULL,
+    is_confirmed boolean                 NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX CONCURRENTLY recorded_on_index ON detections (recorded_on DESC NULLS LAST);

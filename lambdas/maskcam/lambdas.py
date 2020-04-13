@@ -315,7 +315,6 @@ class FetchActivitiesLambda(Lambda):
                     },
                     ExpiresIn=60 * 60 * 24,
                 )
-
             }
             for a in repo.get_all_activities()
         ]

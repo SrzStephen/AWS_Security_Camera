@@ -60,6 +60,7 @@ class Repo:
                 """
                 SELECT id, device_name, created_on, recorded_on, min_confidence, people_in_frame, activity
                 FROM detections
+                WHERE is_confirmed = FALSE
                 ORDER BY recorded_on;
                 """
             )
