@@ -200,7 +200,6 @@ class QueryLambda(Lambda):
         s3 = boto3.client('s3')
         limit = min(data.get('limit', settings.QUERY_DEFAULT_RESULT_COUNT), settings.QUERY_MAX_RESULT_COUNT)
 
-
         ## TODO QUERY
         potholes = repo.TODO(
             data['bounds'], limit + 1,
@@ -224,7 +223,7 @@ class QueryLambda(Lambda):
 
 class UploadLambda(Lambda):
     @staticmethod
-    def parse_sagemaker_output(output:dict, person_threshold):
+    def parse_sagemaker_output(output: dict, person_threshold):
         def _extract_fields(predict_dict):
             return dict(name=predict_dict['name'], person_prob=float(predict_dict['percentage_probability']),
                         no_mask_prob=float(predict_dict['classes']['no_mask']))
@@ -281,6 +280,14 @@ class UploadLambda(Lambda):
                 'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
             })
         # If there was a person detected lets save that
+        # Get the activity type
+        if data['override']:
+            activity = "override"
+        else:
+            if sagemaker_output['min_mask'] > data['mask_threshold']:
+                activity = "violation"
+            else:
+                activity = "compliant"
 
         record_id = uuid4()
 
@@ -305,12 +312,9 @@ class UploadLambda(Lambda):
             recorded_on=data['timestamp'],
             min_confidence=sagemaker_output['min_mask'],
             people_in_frame=sagemaker_output['people_in_frame'],
-            override=data['override']
+            activity=activity
         )
         # return the raw sagemaker output for the RPI to make the decisions
         return JsonResponse(result['Body'].read(), headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
-
-
-    

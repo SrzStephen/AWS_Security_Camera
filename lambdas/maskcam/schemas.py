@@ -37,7 +37,7 @@ class PotholeSchema(Schema):
     confidence = fields.Float(required=True)
     coordinates = fields.Tuple((fields.Float(), fields.Float()), required=True)
     photo_url = fields.String(required=True)
-    override = fields.Bool(required=True)
+
 
 
 class PotholeUploadSchema(Schema):
@@ -46,6 +46,8 @@ class PotholeUploadSchema(Schema):
     photo_data = fields.String(required=True)
     person_treshold = fields.String(required=True)
     mask_threshold = fields.String(required=True)
+    override = fields.Bool(required=True)
+
 
 
 def apply_schema(schema: Type[Schema], data: Union[str, dict]):
