@@ -191,7 +191,7 @@ class UploadLambda(Lambda):
                 data = _extract_fields(prediction)
                 if data['name'] == "person" and data['person_prob'] > person_threshold:
                     people_in_frame += 1
-                    mask_prediction.append(1-data['no_mask_prob'])
+                    mask_prediction.append(100-data['no_mask_prob'])
             except (ValueError, KeyError) as e:
                 log.critical("It looks like the format of the sagemaker response has changed")
                 log.exception(e)

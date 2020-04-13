@@ -18,17 +18,13 @@ if __name__ == "__main__":
             else:
                 override = "False"
             myid = str(uuid.uuid4())
-
             with open(file.absolute(), 'rb') as fp:
                 image = b64encode(fp.read()).decode('utf-8')
-            data = dict(id=myid, device_name="ICU_Camera",
+            data = dict(device_name="ICU_Camera",
                         timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
                         photo_data=image, person_threshold=0.5,
-                        mask_treshold=0.5,
+                        mask_threshold=0.5,
                         override=override)
 
             response = requests.post(GATEWAY_URL, data=dumps(data))
             response.raise_for_status()
-            exit()
-            if response.status_code != 200:
-                exit()
