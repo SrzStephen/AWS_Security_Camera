@@ -57,8 +57,16 @@ class Repo:
         with self.connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, device_name, created_on, recorded_on, min_confidence, people_in_frame, activity
-                FROM detections
+                SELECT d.id,
+                       c.device_name,
+                       d.device_serial,
+                       d.created_on,
+                       d.recorded_on,
+                       d.min_confidence,
+                       d.people_in_frame,
+                       d.activity
+                FROM detections AS d
+                JOIN cameras AS c ON c.device_serial = d.device_serial
                 WHERE is_confirmed = FALSE
                 ORDER BY recorded_on;
                 """
