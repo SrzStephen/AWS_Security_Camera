@@ -324,5 +324,37 @@ class FetchActivitiesLambda(Lambda):
         })
 
 
+class ConfirmActivityLambda(Lambda):
+    @staticmethod
+    def _parse_body(event: Event) -> Optional[dict]:
+        try:
+            return schemas.apply_schema(schemas.ConfirmSchema, event.body)
+        except schemas.ValidationError:
+            log.debug(event.body)
+            log.exception("Invalid payload received")
+            return None
+
+    def handle(self, event: Event, context: Context) -> Response:
+        data = ConfirmActivityLambda._parse_body(event)
+        if data is None:
+            return JsonResponse(
+                status_code=httpstatus.HTTP_400_BAD_REQUEST,
+                data={'message': 'Invalid payload'},
+            )
+
+        repo = Repo(
+            host=settings.DB_HOST,
+            database=settings.DB_NAME,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+        )
+
+        repo.confirm_activity(activity_id=data['activity_id'])
+        return JsonResponse({}, headers={
+            'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
+        })
+
+
 upload_handler = UploadLambda().bind()
 fetch_activities_handler = FetchActivitiesLambda().bind()
+confirm_activity_handler = ConfirmActivityLambda().bind()

@@ -48,6 +48,18 @@ functions:
               - Content-Type
             allowCredentials: false
 
+  confirm_activity:
+    handler: maskcam/lambdas.confirm_activity_handler
+    events:
+      - http:
+          path: confirm
+          method: post
+          cors:
+            origin: ${env:ACCESS_CONTROL_ALLOW_ORIGIN}
+            headers:
+              - Content-Type
+            allowCredentials: false
+
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline

@@ -48,8 +48,7 @@ class Repo:
                     recorded_on,
                     min_confidence,
                     people_in_frame,
-                    activity
-
+                    activity,
                 )
             )
             self.connection.commit()
@@ -78,8 +77,16 @@ class Repo:
                 for a in cursor.fetchall()
             ]
 
-    def get_items_for_device(self, device_name: str, min_time: datetime):
-        raise NotImplementedError
-
-    def get_all_item(self, min_time: datetime):
-        raise NotImplementedError
+    def confirm_activity(self, activity_id: UUID) -> None:
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE detections
+                SET is_confirmed = TRUE
+                WHERE id = %s
+                """,
+                (
+                    str(activity_id),
+                )
+            )
+            self.connection.commit()

@@ -39,7 +39,6 @@ class PotholeSchema(Schema):
     photo_url = fields.String(required=True)
 
 
-
 class UploadSchema(Schema):
     device_name = fields.String(required=True)
     timestamp = fields.DateTime(required=True)
@@ -48,6 +47,9 @@ class UploadSchema(Schema):
     mask_threshold = fields.Float(required=True)
     override = fields.String(required=True)
 
+
+class ConfirmSchema(Schema):
+    activity_id = fields.UUID(required=True)
 
 
 def apply_schema(schema: Type[Schema], data: Union[str, dict]):
