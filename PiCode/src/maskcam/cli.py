@@ -12,11 +12,22 @@ import RPi.GPIO as GPIO
 from time import time, sleep
 from .settings import DOOR_OUT_PIN, DOOR_OVERRIDE_BUTTON, OPEN_TIME, DEVICE_NAME
 from logging import getLogger
-from .common_fns import session_with_retry_policy, open_door
+from .common_fns import session_with_retry_policy, open_door, get_serial_number, Pinger
 from json import dumps
+import atexit
+import pytz
+from datetime import datetime
 
 logger = getLogger(__name__)
-GPIO.setmode(GPIO.BCM)
+
+
+@atexit.register
+def cleanup_GPIO_on_exit():
+    logger.info("Cleaning up GPIO")
+    GPIO.cleanup()
+
+
+GPIO.setmode(GPIO.BOARD)
 
 
 @dataclass
@@ -49,7 +60,7 @@ def cli(config, camera_number, camera_invert, device_name, minimum_difference, a
 
     # Trigger door open when we hit the door override button
     # Doing this to pass some params into the function
-    callback_fn = lambda x:open_door(door_pin,api_gateway,open_time,device_name)
+    callback_fn = lambda x: open_door(door_pin, api_gateway, open_time, device_name)
     GPIO.add_event_detect(DOOR_OVERRIDE_BUTTON(), GPIO.RISING, callback=callback_fn)
 
     # setup logging
@@ -84,14 +95,18 @@ def to_file(config, file_path):
 @cli.command("to_aws")
 @config_class
 def to_aws(config):
-    start = time()
+    serial = get_serial_number()
+    ping = Pinger(gateway_URL=f"{config.gateway_url}/ping", device_name=config.device_name)
+    ping.start()
     while not quitevent.is_set():
         for CameraObject, image in config.generator:
             # We got an event where the camera was diffed.
             with session_with_retry_policy() as Session:
                 # Not strictly correct, not a binary image.
-                data = dict(image=b64encode(image), runtime=(time() - start), device_name=DEVICE_NAME(),
-                            person_threshold=PERSON_PERCENTAGE(), mask_treshhold=1 - NO_MASK_THRESHOLD())
+                data = dict(photo_data=b64encode(image),
+                            timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(), device_name=DEVICE_NAME(),
+                            person_threshhold=PERSON_PERCENTAGE(), mask_treshhold=1 - NO_MASK_THRESHOLD(),
+                            device_serial=serial)
                 response = Session.post(f"{config.gateway_url}/classify", data=dumps(data))
                 try:
                     response.raise_for_status()

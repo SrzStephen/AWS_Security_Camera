@@ -1,4 +1,3 @@
-from attentive import quitevent
 from .camera import Camera
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -8,8 +7,54 @@ from logging import basicConfig, getLogger
 import RPi.GPIO as GPIO
 from json import dumps
 from time import sleep
+from attentive import quitevent
+from threading import Thread
+from datetime import datetime
+import pytz
 
 logger = getLogger(__name__)
+
+
+def get_serial_number():
+    # Get the rpis serial number
+    try:
+        with open('/proc/cpuinfo', 'r') as fp:
+            for line in fp:
+                if line[0:6] == "Serial":
+                    cpuserial = line[10:26]
+                    return cpuserial
+    except:
+        cpuserial = "ERROR000000000"
+        return cpuserial
+
+
+class Pinger():
+    def __init__(self, gateway_URL, device_name):
+        self.__stop = False
+        self.gateway_url = gateway_URL
+        self.session = session_with_retry_policy()
+        self.thread = Thread(target=self.continue_until_stopped())
+        self.serial = get_serial_number()
+        self.device_name = device_name
+
+    def stop(self):
+        self.__stop = True
+
+    def continue_until_stopped(self):
+        while not quitevent.is_set():
+            if self.__stop:
+                break
+            try:
+                self.session.post(self.gateway_url,
+                                  data=dumps(dict(device_serial=self.serial, device_name=self.device_name,
+                                                  pinged_on=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(), )))
+                sleep(30)
+            except Exception as e:
+                logger.debug(f"Error code {e} while pinging")
+                sleep(30)
+
+    def start(self):
+        self.thread.start()
 
 
 def data_generator(cam_num, invert, threshold):

@@ -60,6 +60,18 @@ functions:
               - Content-Type
             allowCredentials: false
 
+  fetch_stats:
+    handler: maskcam/lambdas.fetch_stats_handler
+    events:
+      - http:
+          path: stats
+          method: get
+          cors:
+            origin: ${env:ACCESS_CONTROL_ALLOW_ORIGIN}
+            headers:
+              - Content-Type
+            allowCredentials: false
+
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline
