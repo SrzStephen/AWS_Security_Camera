@@ -17,7 +17,7 @@ AWS_REGION = Knob(env_name="AWS_REGION", default='us-east=1', description="AWS r
 MODEL_ENDPOINT_NAME = Knob(env_name="AWS_MODEL_ENDPOINT_NAME", default=False,
                            description="AWS Model endpoint for CVEDIA Human Detector")
 
-AWS_API_GATEWAY = Knob(env_name="AWS_API_GATEWAY", default="Foo/bar/baz", description="AWS API Gateway Endpoint")
+AWS_API_GATEWAY = Knob(env_name="AWS_API_GATEWAY", default="https://m5k4jhx1ka.execute-api.us-east-1.amazonaws.com/dev/", description="AWS API Gateway Endpoint")
 
 MIN_PERCENTAGE_DIFF = Knob(env_name="MIN_PERCENTAGE_DIFF", default=10,
                            description="Minimum difference between frames to send")

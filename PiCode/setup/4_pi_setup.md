@@ -81,6 +81,10 @@ sudo addgroup --system ggc_group
 sudo groupadd docker
 sudo usermod -aG docker pi
 sudo usermod -aG docker ggc_user
+# setup opencv (for devel purposes).
+sudo apt install python3-pyqt5 libqtgui4 libjasper-dev libatlas-base-dev -y
+sudo apt install python3-opencv -y
+
 # Download greengrass setup
 wget -q -O ./gg-device-setup-latest.sh https://d1onfpft10uf5o.cloudfront.net/greengrass-device-setup/downloads/gg-device-setup-latest.sh && chmod +x ./gg-device-setup-latest.sh
 ```

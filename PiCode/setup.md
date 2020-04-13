@@ -33,7 +33,30 @@ sudo apt install python3 python3-pip
 pip3 install -r requirements.txt
 sudo apt-get install python-opencv
 pip install opencv-contrib-python==4.1.0.25
+sudo apt-get install python-opencv
+sudo apt install libatlas3-base libwebp6 libtiff5 libjasper1 libilmbase12 libopenexr22 libilmbase12 libgstreamer1.0-0 libavcodec57 libavformat57 libavutil55 libswscale4 libqtgui4 libqt4-test libqtcore4
+sudo apt-get install libjpeg-dev libtiff5-dev libjasper-dev libpng12-dev -y
+sudo apt install libqt4-test
 
+sudo apt-get install libatlas-base-dev 
+
+sudo apt-get install libjasper-dev 
+
+sudo apt-get install libqtgui4 
+
+sudo apt-get install python3-pyqt5 
+
+sudo apt install libqt4-test
+
+sudo apt install python3-pyqt5 libqtgui4 libjasper-dev libatlas-base-dev -y
+sudo apt install python3-opencv -y
+
+sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev -y
+sudo apt-get install libxvidcore-dev libx264-dev -y
+sudo apt-get install libgtk2.0-dev libgtk-3-dev -y
+sudo apt-get install libatlas-base-dev gfortran -y
+sudo apt-get install libqtgui4 python3-pyqt5 libjasper-dev libatlas-base-dev
+sudo apt-get install 
 
 
 ```
@@ -55,7 +78,7 @@ https://udacity.zendesk.com/hc/en-us/articles/360037696812-How-do-I-request-a-li
 https://docs.aws.amazon.com/sagemaker/latest/dg/appendix.html
 ```
 
-
+sudo apt-get install libatlas-base-dev
 
 
 

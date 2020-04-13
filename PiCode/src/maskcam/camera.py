@@ -4,11 +4,12 @@ import time
 from threading import Thread
 from attentive import quitevent
 import cv2
+import numpy as np
 
 
 class Camera(PiCamera):
     def __init__(self, camera_num: int, invert: bool):
-        PiCamera.__init__(self, camera_num=camera_num, resolution=(1024, 1024))
+        PiCamera.__init__(self, camera_num=camera_num, resolution=(512, 512))
         if invert:
             self.rotation = 180
         self.framerate = 32
@@ -16,7 +17,7 @@ class Camera(PiCamera):
         self.updated = False
         self.stopped = False
         self.__capture_stream = PiRGBArray(self)
-        self.__camera_thread = Thread(target=self.__update())
+        self.__camera_thread = Thread(target=self.__update)
 
         # Let camera warm up
         time.sleep(1)
@@ -27,6 +28,8 @@ class Camera(PiCamera):
             # video is lower quality but faster.
             for frame in self.capture_continuous(self.__capture_stream, format='bgr', use_video_port=True):
                 self.last_image = frame.array
+                self.__capture_stream.truncate()
+                self.__capture_stream.seek(0)
                 self.updated = True
 
     def read_frame(self):
@@ -46,7 +49,13 @@ class Camera(PiCamera):
 
     def compare_frames(self, frame1, frame2):
         # convert frames to grayscale to speed up
+        if frame1 is None or frame2 is None:
+            return 0
         frame1_gray = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         frame2_gray = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        # Todo, make sure this is % Pixels
-        return cv2.absdiff(frame1_gray, frame2_gray)
+        num_pixels  = (frame2_gray.shape[0]*frame2_gray.shape[1])
+        # to reduce noise pick some small threshold to consider the pixels values "changed"
+        # otherwise due to camera noise you get ~80% with no changes
+        min_pixel_change = 5
+        changed_pixels = np.count_nonzero(cv2.absdiff(frame1_gray, frame2_gray) > min_pixel_change)
+        return (changed_pixels/num_pixels) * 100

@@ -1,4 +1,4 @@
-from .camera import Camera
+from maskcam.camera import Camera
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from requests import Session
@@ -33,7 +33,7 @@ class Pinger():
         self.__stop = False
         self.gateway_url = gateway_URL
         self.session = session_with_retry_policy()
-        self.thread = Thread(target=self.continue_until_stopped())
+        self.thread = Thread(target=self.continue_until_stopped)
         self.serial = get_serial_number()
         self.device_name = device_name
 
@@ -63,7 +63,12 @@ def data_generator(cam_num, invert, threshold):
     with Camera(cam_num, invert) as Cam:
         # start getting images in a background thread
         Cam.start_polling()
+        # pre fill array
+        images.append(Cam.read_frame())
+        images.append(Cam.read_frame())
         # While we don't sigkill
+
+
         while not quitevent.is_set():
             if Cam.updated:
                 images[last_image] = Cam.read_frame()
@@ -71,7 +76,7 @@ def data_generator(cam_num, invert, threshold):
                 if len(images) > 1:
                     threshold_percentage = Cam.compare_frames(images[0], images[1])
                     if threshold_percentage > threshold:
-                        yield Cam, images[last_image]
+                        yield images[last_image]
                 # rotate frames
                 if last_image == 0:
                     last_image = 1
