@@ -5,15 +5,6 @@
 
 import pytz
 import psycopg2
-import geohash2
-
-from typing import (
-    Callable,
-    List,
-    Optional,
-    Tuple,
-)
-
 from uuid import UUID
 from datetime import datetime
 
@@ -23,25 +14,6 @@ def _utc_now() -> datetime:
 
 
 DatabaseError = psycopg2.Error
-
-
-class Pothole:
-    id: Optional[str]
-    device_name: str
-    timestamp: datetime
-    confidence: float
-    coordinates: Tuple[float, float]
-    photo_url: Optional[str]
-
-    def __init__(self, id: Optional[str], device_name: str, timestamp: datetime,
-                 confidence: float, coordinates: Tuple[float, float], photo_url: Optional[str]):
-        self.id = id
-        self.device_name = device_name
-        self.timestamp = timestamp
-        self.confidence = confidence
-        self.coordinates = coordinates
-        self.photo_url = photo_url
-
 
 class Repo:
     def __init__(self, host: str, database: str, user: str, password: str):
@@ -64,7 +36,7 @@ class Repo:
                 recorded_on,
                 min_confidence,
                 people_in_frame,
-                override
+                activity
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
                 {

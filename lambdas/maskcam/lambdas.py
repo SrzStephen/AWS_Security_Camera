@@ -291,7 +291,7 @@ class UploadLambda(Lambda):
 
         record_id = uuid4()
 
-        s3 = boto3.client('s3')
+        s3 = boto3.client('s3', region_name='us-east-1')
         s3.put_object(
             Bucket=settings.PHOTO_BUCKET_NAME,
             Key=_generate_s3_photo_key(record_id),
@@ -318,3 +318,6 @@ class UploadLambda(Lambda):
         return JsonResponse(result['Body'].read(), headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
+
+
+upload_handler = UploadLambda().bind()
