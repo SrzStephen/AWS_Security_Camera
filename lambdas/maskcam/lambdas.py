@@ -33,6 +33,7 @@ from maskcam.test_sagemaker_responses import responses
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 def _jsonify(data: Union[dict, list]) -> str:
     class ExtendedEncoder(json.JSONEncoder):
         def default(self, o):
@@ -191,9 +192,10 @@ class UploadLambda(Lambda):
                 data = _extract_fields(prediction)
                 if data['name'] == "person" and data['person_prob'] > person_threshold:
                     people_in_frame += 1
-                    mask_prediction.append(100-data['no_mask_prob'])
+                    mask_prediction.append(100 - data['no_mask_prob'])
             except (ValueError, KeyError) as e:
-                log.critical("It looks like the format of the sagemaker response has changed")
+                log.critical(
+                    "It looks like the format of the sagemaker response has changed")
                 log.exception(e)
 
         if people_in_frame is 0:
@@ -229,12 +231,14 @@ class UploadLambda(Lambda):
                 Body=bytearray(base64.b64decode(data['photo_data'])))
             body_response = result['Body'].read()
 
-            sagemaker_output = self.parse_sagemaker_output(result['Body'].read(), data['person_threshold'])
+            sagemaker_output = self.parse_sagemaker_output(
+                result['Body'].read(), data['person_threshold'])
         else:
             log.debug("mocking output")
             from random import randint
             body_response = responses[randint(0, 2)]
-            sagemaker_output = self.parse_sagemaker_output(body_response, data['person_threshold'])
+            sagemaker_output = self.parse_sagemaker_output(
+                body_response, data['person_threshold'])
             log.debug(sagemaker_output)
 
         # If there was no person detected don't send to bucket
@@ -277,10 +281,49 @@ class UploadLambda(Lambda):
             people_in_frame=sagemaker_output['people_in_frame'],
             activity=activity
         )
+
         # return the raw sagemaker output for the RPI to make the decisions
         return JsonResponse(body_response, headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
 
 
+class FetchActivitiesLambda(Lambda):
+    def handle(self, event: Event, context: Context) -> Response:
+        repo = Repo(
+            host=settings.DB_HOST,
+            database=settings.DB_NAME,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+        )
+
+        s3 = boto3.client('s3', region_name='us-east-1')
+
+        data = [
+            {
+                'id': a['id'],
+                'type': a['activity'],
+                'timestamp': a['recorded_on'],
+                'camera': a['device_name'],
+                'minConfidence': a['min_confidence'],
+                'peopleInFrame': a['people_in_frame'],
+                'photoUrl': s3.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': settings.PHOTO_BUCKET_NAME,
+                        'Key': _generate_s3_photo_key(a['id']),
+                    },
+                    ExpiresIn=60 * 60 * 24,
+                )
+
+            }
+            for a in repo.get_all_activities()
+        ]
+
+        return JsonResponse(data, headers={
+            'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
+        })
+
+
 upload_handler = UploadLambda().bind()
+fetch_activities_handler = FetchActivitiesLambda().bind()
