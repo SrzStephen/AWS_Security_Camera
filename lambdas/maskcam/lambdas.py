@@ -355,6 +355,41 @@ class ConfirmActivityLambda(Lambda):
         })
 
 
+class FetchStatsLambda(Lambda):
+    def handle(self, event: Event, context: Context) -> Response:
+        repo = Repo(
+            host=settings.DB_HOST,
+            database=settings.DB_NAME,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+        )
+
+        data = {
+            'cameras': [
+                {
+                    'id': c['id'],
+                    'deviceName': c['device_name'],
+                    'pingedOn': c['pinged_on'],
+                    'compliantCount': c['compliant_count'],
+                    'violationCount': c['violation_count'],
+                    'overrideCount': c['override_count'],
+                }
+                for c in repo.get_all_cameras()
+            ],
+
+            # TODO: Implement.
+            'activityHistory': {
+                'detections': [0, 0, 0, 0, 0, 0, 0],
+                'rates': [0, 0, 0, 0, 0, 0, 0],
+            }
+        }
+
+        return JsonResponse(data, headers={
+            'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
+        })
+
+
 upload_handler = UploadLambda().bind()
 fetch_activities_handler = FetchActivitiesLambda().bind()
 confirm_activity_handler = ConfirmActivityLambda().bind()
+fetch_stats_handler = FetchStatsLambda().bind()

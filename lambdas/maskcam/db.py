@@ -59,7 +59,6 @@ class Repo:
                 """
                 SELECT d.id,
                        c.device_name,
-                       d.device_serial,
                        d.created_on,
                        d.recorded_on,
                        d.min_confidence,
@@ -98,3 +97,28 @@ class Repo:
                 )
             )
             self.connection.commit()
+
+    def get_all_cameras(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, device_name, pinged_on,
+                (SELECT count(*) FROM detections WHERE device_serial = c.device_serial AND activity = 'compliant'),
+                (SELECT count(*) FROM detections WHERE device_serial = c.device_serial AND activity = 'violation'),
+                (SELECT count(*) FROM detections WHERE device_serial = c.device_serial AND activity = 'override')
+                FROM cameras AS c
+                ORDER BY device_name;
+                """
+            )
+
+            return [
+                {
+                    'id': a[0],
+                    'device_name': a[1],
+                    'pinged_on': a[2],
+                    'compliant_count': a[3],
+                    'violation_count': a[4],
+                    'override_count': a[5],
+                }
+                for a in cursor.fetchall()
+            ]
