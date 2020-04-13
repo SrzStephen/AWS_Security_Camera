@@ -150,6 +150,11 @@ aws greengrass create-connector-definition --name MyGreengrassConnectors --initi
 }'
 ```
 
+##TODO
+1. .env file
+2. Preload image
+
+
 # References
 [Enable SSH on boot](https://www.raspberrypi.org/forums/viewtopic.php?t=129727)
 
