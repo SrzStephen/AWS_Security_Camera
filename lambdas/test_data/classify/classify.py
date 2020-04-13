@@ -7,31 +7,28 @@ import uuid
 import pytz
 from random import randint
 
-GATEWAY_URL = ""
+GATEWAY_URL = "http://localhost:8888/upload"
 
 if __name__ == "__main__":
     with Path('data') as datapath:
         files = datapath.glob('*.jpeg')
         for file in files:
             if randint(0, 10) == 1:
-                override = True
+                override = "True"
             else:
-                override = False
+                override = "False"
+            myid = str(uuid.uuid4())
 
             with open(file.absolute(), 'rb') as fp:
-                image = b64encode(fp.read())
-            data = dict(id=uuid.uuid4(), device_name="ICU_Camera",
+                image = b64encode(fp.read()).decode('utf-8')
+            data = dict(id=myid, device_name="ICU_Camera",
                         timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
                         photo_data=image, person_threshold=0.5,
-                        mask_treshhold=0.5,
+                        mask_treshold=0.5,
                         override=override)
-            requests.post()
 
-    with open('data/penguin.png', 'rb') as fp:
-        image_data = fp.read()
-    image_data = b64encode(image_data).decode('utf-8')
-
-    data = dict(image=image_data, runtime=1234, device_name="DEVICE_NAME",
-                person_threshold=0.532, mask_treshhold=0.5432)
-    response = requests.post(GATEWAY_URL, data=dumps(data))
-    response.raise_for_status()
+            response = requests.post(GATEWAY_URL, data=dumps(data))
+            response.raise_for_status()
+            exit()
+            if response.status_code != 200:
+                exit()

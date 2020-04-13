@@ -28,6 +28,7 @@ from maskcam import (
 
 from maskcam.db import Repo
 from maskcam.collections import CaseInsensitiveDict
+from maskcam.test_sagemaker_responses import responses
 
 log = logging.getLogger(__name__)
 
@@ -174,53 +175,6 @@ class Lambda:
         return handler
 
 
-class QueryLambda(Lambda):
-    @staticmethod
-    def _parse_body(event: Event) -> Optional[dict]:
-        try:
-            return schemas.apply_schema(schemas.QuerySchema, event.body)
-        except schemas.ValidationError:
-            return None
-
-    def handle(self, event: Event, context: Context) -> Response:
-        data = QueryLambda._parse_body(event)
-        if data is None:
-            return JsonResponse(
-                status_code=httpstatus.HTTP_400_BAD_REQUEST,
-                data={'message': 'Invalid payload'},
-            )
-
-        repo = Repo(
-            host=settings.DB_HOST,
-            database=settings.DB_NAME,
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-        )
-
-        s3 = boto3.client('s3')
-        limit = min(data.get('limit', settings.QUERY_DEFAULT_RESULT_COUNT), settings.QUERY_MAX_RESULT_COUNT)
-
-        ## TODO QUERY
-        potholes = repo.TODO(
-            data['bounds'], limit + 1,
-            lambda id: s3.generate_presigned_url(
-                'get_object',
-                Params={
-                    'Bucket': settings.PHOTO_BUCKET_NAME,
-                    'Key': _generate_s3_photo_key(id),
-                },
-                ExpiresIn=60 * 60 * 24,
-            )
-        )
-
-        return JsonResponse({
-            'potholes': schemas.dump_schema_list(schemas.PotholeSchema, potholes),
-            'truncated': len(potholes) > limit,
-        }, headers={
-            'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
-        })
-
-
 class UploadLambda(Lambda):
     @staticmethod
     def parse_sagemaker_output(output: dict, person_threshold):
@@ -250,8 +204,10 @@ class UploadLambda(Lambda):
     @staticmethod
     def _parse_body(event: Event) -> Optional[dict]:
         try:
-            return schemas.apply_schema(schemas.PotholeUploadSchema, event.body)
+            print(event.body)
+            return schemas.apply_schema(schemas.UploadSchema, event.body)
         except schemas.ValidationError:
+            log.debug(event.body)
             log.exception("Invalid payload received")
             return None
 
@@ -267,13 +223,18 @@ class UploadLambda(Lambda):
             'runtime.sagemaker',
             region_name='us-east-1'
         )
+        if False:  # Bypass so I dont need to leave endpoint running
+            result = sagemaker.invoke_endpoint(
+                EndpointName=settings.SAGEMAKER_ENDPOINT,
+                ContentType='image/jpeg',
+                Body=bytearray(base64.b64decode(data['photo_data'])))
 
-        result = sagemaker.invoke_endpoint(
-            EndpointName=settings.SAGEMAKER_ENDPOINT,
-            ContentType='image/jpeg',
-            Body=bytearray(base64.b64decode(data['photo_data'])))
+            sagemaker_output = self.parse_sagemaker_output(result['Body'].read(), data['person_threshold'])
+        else:
+            from random import randint
+            response = responses[randint(0, 2)]
+            sagemaker_output = self.parse_sagemaker_output(response, data['person_treshold'])
 
-        sagemaker_output = self.parse_sagemaker_output(result['Body'].read(), data['person_threshold'])
         # If there was no person detected don't send to bucket
         if sagemaker_output is None:
             return JsonResponse([], headers={
@@ -281,7 +242,7 @@ class UploadLambda(Lambda):
             })
         # If there was a person detected lets save that
         # Get the activity type
-        if data['override']:
+        if data['override'] is "True":
             activity = "override"
         else:
             if sagemaker_output['min_mask'] > data['mask_threshold']:
