@@ -31,7 +31,7 @@ from maskcam.collections import CaseInsensitiveDict
 from maskcam.test_sagemaker_responses import responses
 
 log = logging.getLogger(__name__)
-
+log.setLevel(logging.DEBUG)
 
 def _jsonify(data: Union[dict, list]) -> str:
     class ExtendedEncoder(json.JSONEncoder):
@@ -191,7 +191,7 @@ class UploadLambda(Lambda):
                 data = _extract_fields(prediction)
                 if data['name'] == "person" and data['person_prob'] > person_threshold:
                     people_in_frame += 1
-                    mask_prediction.append = 1 - data['no_mask_prob']
+                    mask_prediction.append(1-data['no_mask_prob'])
             except (ValueError, KeyError) as e:
                 log.critical("It looks like the format of the sagemaker response has changed")
                 log.exception(e)
@@ -204,7 +204,6 @@ class UploadLambda(Lambda):
     @staticmethod
     def _parse_body(event: Event) -> Optional[dict]:
         try:
-            print(event.body)
             return schemas.apply_schema(schemas.UploadSchema, event.body)
         except schemas.ValidationError:
             log.debug(event.body)
@@ -228,12 +227,15 @@ class UploadLambda(Lambda):
                 EndpointName=settings.SAGEMAKER_ENDPOINT,
                 ContentType='image/jpeg',
                 Body=bytearray(base64.b64decode(data['photo_data'])))
+            body_response = result['Body'].read()
 
             sagemaker_output = self.parse_sagemaker_output(result['Body'].read(), data['person_threshold'])
         else:
+            log.debug("mocking output")
             from random import randint
-            response = responses[randint(0, 2)]
-            sagemaker_output = self.parse_sagemaker_output(response, data['person_treshold'])
+            body_response = responses[randint(0, 2)]
+            sagemaker_output = self.parse_sagemaker_output(body_response, data['person_threshold'])
+            log.debug(sagemaker_output)
 
         # If there was no person detected don't send to bucket
         if sagemaker_output is None:
@@ -276,7 +278,7 @@ class UploadLambda(Lambda):
             activity=activity
         )
         # return the raw sagemaker output for the RPI to make the decisions
-        return JsonResponse(result['Body'].read(), headers={
+        return JsonResponse(body_response, headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
 

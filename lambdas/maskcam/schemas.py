@@ -44,8 +44,8 @@ class UploadSchema(Schema):
     device_name = fields.String(required=True)
     timestamp = fields.DateTime(required=True)
     photo_data = fields.String(required=True)
-    person_treshold = fields.String(required=True)
-    mask_threshold = fields.String(required=True)
+    person_threshold = fields.Float(required=True)
+    mask_threshold = fields.Float(required=True)
     override = fields.String(required=True)
 
 

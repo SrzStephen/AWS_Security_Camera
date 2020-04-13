@@ -26,10 +26,11 @@ class Repo:
 
     def insert_record(self, id: UUID, device_name: str, recorded_on: datetime, min_confidence: float,
                       people_in_frame: int, activity: str):
+        print(activity)
         with self.connection.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO maskcam (
+                INSERT INTO detections (
                 id,
                 device_name,
                 created_on,
@@ -39,7 +40,7 @@ class Repo:
                 activity
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                {
+                (
                     str(id),
                     device_name,
                     _utc_now(),
@@ -48,7 +49,7 @@ class Repo:
                     people_in_frame,
                     activity
 
-                }
+                )
             )
             self.connection.commit()
 
