@@ -224,7 +224,7 @@ class UploadLambda(Lambda):
             'runtime.sagemaker',
             region_name='us-east-1'
         )
-        if len(settings.SAGEMAKER_ENDPOINT) !=0:  # If a non blank sagemaker endpoint has been put in
+        if len(settings.SAGEMAKER_ENDPOINT) != 0:  # If a non blank sagemaker endpoint has been put in
             result = sagemaker.invoke_endpoint(
                 EndpointName=settings.SAGEMAKER_ENDPOINT,
                 ContentType='image/jpeg',
@@ -233,7 +233,7 @@ class UploadLambda(Lambda):
             log.info(body_response)
             sagemaker_output = self.parse_sagemaker_output(
                 body_response, data['person_threshold'])
-        else: # Otherwise run it in testing mode
+        else:  # Otherwise run it in testing mode
             log.debug("mocking output because a blank sagemaker endpoint was put in")
             from random import randint
             body_response = responses[randint(0, 2)]
@@ -398,7 +398,43 @@ class FetchStatsLambda(Lambda):
         })
 
 
+class PingLambda(Lambda):
+    @staticmethod
+    def _parse_body(event: Event) -> Optional[dict]:
+        try:
+            return schemas.apply_schema(schemas.PingSchema, event.body)
+        except schemas.ValidationError:
+            log.debug(event.body)
+            log.exception("Invalid payload received")
+            return None
+
+    def handle(self, event: Event, context: Context) -> Response:
+        data = PingLambda._parse_body(event)
+        if data is None:
+            return JsonResponse(
+                status_code=httpstatus.HTTP_400_BAD_REQUEST,
+                data={'message': 'Invalid payload'},
+            )
+
+        repo = Repo(
+            host=settings.DB_HOST,
+            database=settings.DB_NAME,
+            user=settings.DB_USER,
+            password=settings.DB_PASSWORD,
+        )
+
+        repo.insert_ping(
+            device_serial=data['device_serial'],
+            device_name=data['device_name'],
+        )
+
+        return JsonResponse({}, headers={
+            'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
+        })
+
+
 upload_handler = UploadLambda().bind()
 fetch_activities_handler = FetchActivitiesLambda().bind()
 rate_activity_handler = RateActivityLambda().bind()
 fetch_stats_handler = FetchStatsLambda().bind()
+ping_handler = PingLambda().bind()

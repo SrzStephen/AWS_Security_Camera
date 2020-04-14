@@ -85,6 +85,18 @@ functions:
               - Content-Type
             allowCredentials: false
 
+  ping:
+    handler: maskcam/lambdas.ping_handler
+    events:
+      - http:
+          path: ping
+          method: post
+          cors:
+            origin: ${env:ACCESS_CONTROL_ALLOW_ORIGIN}
+            headers:
+              - Content-Type
+            allowCredentials: false
+
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline
