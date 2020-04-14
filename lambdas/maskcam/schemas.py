@@ -30,17 +30,8 @@ class QuerySchema(Schema):
     limit = fields.Integer(required=False)
 
 
-class PotholeSchema(Schema):
-    id = fields.UUID(required=True)
-    device_name = fields.String(required=True)
-    timestamp = fields.DateTime(required=True)
-    confidence = fields.Float(required=True)
-    coordinates = fields.Tuple((fields.Float(), fields.Float()), required=True)
-    photo_url = fields.String(required=True)
-
-
 class UploadSchema(Schema):
-    device_name = fields.String(required=True)
+    device_serial = fields.String(required=True)
     timestamp = fields.DateTime(required=True)
     photo_data = fields.String(required=True)
     person_threshold = fields.Float(required=True)

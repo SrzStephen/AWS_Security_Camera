@@ -224,19 +224,20 @@ class UploadLambda(Lambda):
             'runtime.sagemaker',
             region_name='us-east-1'
         )
-        if False:  # Bypass so I dont need to leave endpoint running
+        if len(settings.SAGEMAKER_ENDPOINT) !=0:  # If a non blank sagemaker endpoint has been put in
             result = sagemaker.invoke_endpoint(
                 EndpointName=settings.SAGEMAKER_ENDPOINT,
                 ContentType='image/jpeg',
                 Body=bytearray(base64.b64decode(data['photo_data'])))
-            body_response = result['Body'].read()
-
+            body_response = json.loads(result['Body'].read().decode('utf-8'))
+            log.info(body_response)
             sagemaker_output = self.parse_sagemaker_output(
-                result['Body'].read(), data['person_threshold'])
-        else:
-            log.debug("mocking output")
+                body_response, data['person_threshold'])
+        else: # Otherwise run it in testing mode
+            log.debug("mocking output because a blank sagemaker endpoint was put in")
             from random import randint
             body_response = responses[randint(0, 2)]
+
             sagemaker_output = self.parse_sagemaker_output(
                 body_response, data['person_threshold'])
             log.debug(sagemaker_output)
@@ -251,7 +252,7 @@ class UploadLambda(Lambda):
         if data['override'] is "True":
             activity = "override"
         else:
-            if sagemaker_output['min_mask'] > data['mask_threshold']:
+            if sagemaker_output['min_mask'] < data['mask_threshold']:
                 activity = "violation"
             else:
                 activity = "compliant"
@@ -275,7 +276,7 @@ class UploadLambda(Lambda):
 
         repo.insert_record(
             id=record_id,
-            device_name=data['device_name'],
+            device_serial=data['device_serial'],
             recorded_on=data['timestamp'],
             min_confidence=sagemaker_output['min_mask'],
             people_in_frame=sagemaker_output['people_in_frame'],

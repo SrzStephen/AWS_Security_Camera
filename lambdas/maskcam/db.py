@@ -25,7 +25,7 @@ class Repo:
             password=password,
         )
 
-    def insert_record(self, id: UUID, device_name: str, recorded_on: datetime, min_confidence: float,
+    def insert_record(self, id: UUID, device_serial: str, recorded_on: datetime, min_confidence: float,
                       people_in_frame: int, activity: str):
         print(activity)
         with self.connection.cursor() as cursor:
@@ -33,7 +33,7 @@ class Repo:
                 """
                 INSERT INTO detections (
                 id,
-                device_name,
+                device_serial,
                 created_on,
                 recorded_on,
                 min_confidence,
@@ -43,7 +43,7 @@ class Repo:
                 """,
                 (
                     str(id),
-                    device_name,
+                    device_serial,
                     _utc_now(),
                     recorded_on,
                     min_confidence,
