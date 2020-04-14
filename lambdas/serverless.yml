@@ -5,10 +5,23 @@
 
 service: maskcam
 
+
 provider:
   name: aws
   region: us-east-1
   runtime: python3.7
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: sagemaker:InvokeEndpoint
+      Resource: "arn:aws:sagemaker:*:*:*"
+    - Effect: "Allow"
+      Action: s3:PutObject
+      Resource: "arn:aws:s3:::${env:PHOTO_BUCKET_NAME}/${env:PHOTO_KEY_PREFIX}*"
+    - Effect: "Allow"
+      Action: s3:GetObject
+      Resource: "arn:aws:s3:::${env:PHOTO_BUCKET_NAME}/${env:PHOTO_KEY_PREFIX}*"
+
+
 
 environment:
   DEBUG: ${env:DEBUG}
