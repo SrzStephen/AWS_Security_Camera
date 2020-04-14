@@ -48,8 +48,9 @@ class UploadSchema(Schema):
     override = fields.String(required=True)
 
 
-class ConfirmSchema(Schema):
+class RatingSchema(Schema):
     activity_id = fields.UUID(required=True)
+    rating = fields.Integer(required=True)
 
 
 def apply_schema(schema: Type[Schema], data: Union[str, dict]):

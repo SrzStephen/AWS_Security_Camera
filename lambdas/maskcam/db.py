@@ -66,7 +66,7 @@ class Repo:
                        d.activity
                 FROM detections AS d
                 JOIN cameras AS c ON c.device_serial = d.device_serial
-                WHERE is_confirmed = FALSE
+                WHERE rating = 0
                 ORDER BY recorded_on;
                 """
             )
@@ -84,15 +84,16 @@ class Repo:
                 for a in cursor.fetchall()
             ]
 
-    def confirm_activity(self, activity_id: UUID) -> None:
+    def rate_activity(self, activity_id: UUID, rating: int) -> None:
         with self.connection.cursor() as cursor:
             cursor.execute(
                 """
                 UPDATE detections
-                SET is_confirmed = TRUE
+                SET rating = %s
                 WHERE id = %s
                 """,
                 (
+                    rating,
                     str(activity_id),
                 )
             )

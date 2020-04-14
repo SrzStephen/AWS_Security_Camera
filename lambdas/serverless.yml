@@ -49,10 +49,10 @@ functions:
             allowCredentials: false
 
   confirm_activity:
-    handler: maskcam/lambdas.confirm_activity_handler
+    handler: maskcam/lambdas.rate_activity_handler
     events:
       - http:
-          path: confirm
+          path: rate
           method: post
           cors:
             origin: ${env:ACCESS_CONTROL_ALLOW_ORIGIN}

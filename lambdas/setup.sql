@@ -21,7 +21,7 @@ CREATE TABLE detections
     min_confidence  double precision         NOT NULL,
     people_in_frame integer                  NOT NULL,
     activity        character varying(255)   NOT NULL,
-    is_confirmed    boolean                  NOT NULL DEFAULT FALSE
+    rating          integer                  NOT NULL DEFAULT 0
 );
 
 CREATE INDEX CONCURRENTLY serial_index ON cameras (device_serial ASC);

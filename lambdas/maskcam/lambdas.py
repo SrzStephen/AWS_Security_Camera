@@ -324,18 +324,18 @@ class FetchActivitiesLambda(Lambda):
         })
 
 
-class ConfirmActivityLambda(Lambda):
+class RateActivityLambda(Lambda):
     @staticmethod
     def _parse_body(event: Event) -> Optional[dict]:
         try:
-            return schemas.apply_schema(schemas.ConfirmSchema, event.body)
+            return schemas.apply_schema(schemas.RatingSchema, event.body)
         except schemas.ValidationError:
             log.debug(event.body)
             log.exception("Invalid payload received")
             return None
 
     def handle(self, event: Event, context: Context) -> Response:
-        data = ConfirmActivityLambda._parse_body(event)
+        data = RateActivityLambda._parse_body(event)
         if data is None:
             return JsonResponse(
                 status_code=httpstatus.HTTP_400_BAD_REQUEST,
@@ -349,7 +349,11 @@ class ConfirmActivityLambda(Lambda):
             password=settings.DB_PASSWORD,
         )
 
-        repo.confirm_activity(activity_id=data['activity_id'])
+        repo.rate_activity(
+            activity_id=data['activity_id'],
+            rating=data['rating'],
+        )
+
         return JsonResponse({}, headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
@@ -395,5 +399,5 @@ class FetchStatsLambda(Lambda):
 
 upload_handler = UploadLambda().bind()
 fetch_activities_handler = FetchActivitiesLambda().bind()
-confirm_activity_handler = ConfirmActivityLambda().bind()
+rate_activity_handler = RateActivityLambda().bind()
 fetch_stats_handler = FetchStatsLambda().bind()
