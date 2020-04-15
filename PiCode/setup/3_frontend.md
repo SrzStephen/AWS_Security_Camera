@@ -1,6 +1,6 @@
 # Doesn't actually belong here. We'll shuffle repo stuff around later.
 
-# create RDS DB
+# Create RDS DB
 ```
 aws rds create-db-instance 
 --engine postgres \
@@ -18,6 +18,12 @@ Check your database with  ```aws rds describe-db-instances --region us-east-1| g
 After this you should be able to connect to this publicly accessible data, I suggest [dbeaver](https://dbeaver.io/download/) if you don't already have a favourite SQL tool.
 
 Make sure to record your Endpoint and username/password for later steps
+
+# Create S3 Bucket
+
+
+
+
 
 # Serverless deploy
 
