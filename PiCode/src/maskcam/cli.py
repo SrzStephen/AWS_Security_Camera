@@ -35,7 +35,7 @@ config_class = click.make_pass_decorator(ConfigObject, ensure=True)
 @click.option('--device_name', default=DEVICE_NAME(), help=DEVICE_NAME.help(), type=str)
 @click.option('--minimum_difference', default=MIN_PERCENTAGE_DIFF(), help=MIN_PERCENTAGE_DIFF.help(), type=int)
 @click.option('--api_gateway', default=AWS_API_GATEWAY(), help=AWS_API_GATEWAY.help(), type=str)
-@click.option('-v', '--verbose', default=1, count=True, help="Verbosity. More v, more verbose. Eg -vvv")
+@click.option('-v', '--verbose', default=4, count=True, help="Verbosity. More v, more verbose. Eg -vvv")
 @click.option('--door_button', default=DOOR_OVERRIDE_BUTTON(), help=DOOR_OVERRIDE_BUTTON.help())
 @click.option('--door_pin', default=DOOR_OUT_PIN(), help=DOOR_OUT_PIN.help())
 @click.option('--opening_time', default=OPEN_TIME(), help=OPEN_TIME.help())
@@ -59,10 +59,10 @@ def cli(config, camera_number, camera_invert, device_name, minimum_difference, a
     config.generator = gen
     config.door_pin = door_pin
     config.api_gateway = api_gateway
-    config.opening_time = opening_time
+    config.open_time = opening_time
 
-    callback_fn = lambda x: open_door(config, action='override')
-    GPIO.add_event_detect(door_button, GPIO.RISING, callback=callback_fn)
+    callback_fn = lambda x: open_door(config, override=True)
+    GPIO.add_event_detect(door_button, GPIO.RISING, callback=callback_fn,bouncetime=3)
 
 
 @cli.command("to_stdout")
@@ -138,7 +138,10 @@ def to_aws(config):
                     else:
                         if response.get('activity') == 'compliant':
                             logger.info("opening door")
-                        open_door(config, override=False)
+                            open_door(config, override=False)
+                        else:
+                            logger.info("Not opening door.")
+                            pass
                 # If we can't decode this to JSON then it's an invalid payload
                 except JSONDecodeError:
                     logger.warning(f"Invalid JSON response from classify \n {response.content}")
