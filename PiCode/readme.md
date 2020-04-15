@@ -103,9 +103,15 @@ Some changes to OpenCV (used for detecting image differences) in November broke 
 has updated his blog with steps around this. In retrospect given the problems we had, it would probably have been worth
 doing the pixel change detection in numpy instead of using such a heavy library to do it for us.
 
+
+### Models Limitations
+We learnt very late in the hackathon that the model has a slight limitation that it doesn't do very will with non
+white/blueish coloured masks.
+![](docs/attempts.png)
+
 ## What we learnt
 
-We learnt a lot more about AWS serv
+### RICO PLS
 
 
 ## Whats next

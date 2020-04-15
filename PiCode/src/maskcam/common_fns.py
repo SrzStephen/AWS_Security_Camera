@@ -1,4 +1,4 @@
-from maskcam.camera import Camera
+from maskcam.camera import Camera, image_to_base64
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from requests import Session
@@ -34,10 +34,9 @@ serial = get_serial_number()
 
 
 def generate_payload(config, image, override='False'):
-    data = dict(photo_data=b64encode(image).decode('utf-8'),
+    data = dict(photo_data=image_to_base64(image),
                 timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
-                device_name=config.device_name,
-                person_threshhold=PERSON_PERCENTAGE(), mask_treshhold=1 - NO_MASK_THRESHOLD(),
+                person_threshold=PERSON_PERCENTAGE(), mask_threshold=100-NO_MASK_THRESHOLD(),
                 device_serial=serial, override=override)
     return data
 

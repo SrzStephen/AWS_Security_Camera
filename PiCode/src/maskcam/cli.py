@@ -38,7 +38,7 @@ config_class = click.make_pass_decorator(ConfigObject, ensure=True)
 @click.option('-v', '--verbose', default=1, count=True, help="Verbosity. More v, more verbose. Eg -vvv")
 @click.option('--door_button', default=DOOR_OVERRIDE_BUTTON(), help=DOOR_OVERRIDE_BUTTON.help())
 @click.option('--door_pin', default=DOOR_OUT_PIN(), help=DOOR_OUT_PIN.help())
-@click.option('--opening_time', default=OPEN_TIME(), help=OPEN_TIME().help())
+@click.option('--opening_time', default=OPEN_TIME(), help=OPEN_TIME.help())
 @config_class
 def cli(config, camera_number, camera_invert, device_name, minimum_difference, api_gateway, verbose, door_button,
         door_pin, opening_time):
@@ -76,7 +76,7 @@ def to_stdout(config, file_path):
                 data = generate_payload(config=config, image=image)
                 try:
                     response = Session.post(f"{config.gateway_url}upload", data=dumps(data))
-                    print(response.json())
+                    print(response.content)
                 except Exception as e:
                     logger.warning(f"got error {e} with payload {data} continuing anyway")
                     pass
@@ -132,15 +132,18 @@ def to_aws(config):
                     continue
                 try:
                     response = response.json()
+                    if len(response) == 0:
+                        logger.info("no people in frame")
+                        pass
+                    else:
+                        if response.get('activity') == 'compliant':
+                            logger.info("opening door")
+                        open_door(config, override=False)
                 # If we can't decode this to JSON then it's an invalid payload
                 except JSONDecodeError:
                     logger.warning(f"Invalid JSON response from classify \n {response.content}")
                     continue
 
-                if response.get('activity', 'violation') == 'compliant':
-                    logger.info("opening door")
-
-                    open_door(config.door_pin, config.api_gateway, config.opening_time, config.device_name)
 
 
 if __name__ == "__main__":

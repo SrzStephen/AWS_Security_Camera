@@ -233,6 +233,7 @@ class UploadLambda(Lambda):
             log.info(body_response)
             sagemaker_output = self.parse_sagemaker_output(
                 body_response, data['person_threshold'])
+
         else:  # Otherwise run it in testing mode
             log.debug("mocking output because a blank sagemaker endpoint was put in")
             from random import randint
