@@ -62,7 +62,7 @@ def cli(config, camera_number, camera_invert, device_name, minimum_difference, a
     config.open_time = opening_time
 
     callback_fn = lambda x: open_door(config, override=True)
-    GPIO.add_event_detect(door_button, GPIO.RISING, callback=callback_fn,bouncetime=3)
+    GPIO.add_event_detect(door_button, GPIO.RISING, callback=callback_fn, bouncetime=1000)
 
 
 @cli.command("to_stdout")
@@ -137,16 +137,17 @@ def to_aws(config):
                         pass
                     else:
                         if response.get('activity') == 'compliant':
-                            logger.info("opening door")
+                            logger.info("Opening door. Thanks for wearing a mask.")
                             open_door(config, override=False)
                         else:
-                            logger.info("Not opening door.")
+                            logger.info(
+                                f"I see {len(response['sagemaker_response'])} people and one of you isn't wearing a mask.")
+                            logger.info("Wear a mask. I'm not opening the door until you do.")
                             pass
                 # If we can't decode this to JSON then it's an invalid payload
                 except JSONDecodeError:
                     logger.warning(f"Invalid JSON response from classify \n {response.content}")
                     continue
-
 
 
 if __name__ == "__main__":

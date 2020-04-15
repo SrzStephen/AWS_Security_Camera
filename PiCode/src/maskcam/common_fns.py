@@ -36,7 +36,7 @@ serial = get_serial_number()
 def generate_payload(config, image, override='False'):
     data = dict(photo_data=image_to_base64(image),
                 timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
-                person_threshold=PERSON_PERCENTAGE(), mask_threshold=100-NO_MASK_THRESHOLD(),
+                person_threshold=PERSON_PERCENTAGE(), mask_threshold=100 - NO_MASK_THRESHOLD(),
                 device_serial=serial, override=override)
     return data
 
@@ -119,6 +119,11 @@ def set_verbosity(verbose: int):
     # get some chatty logs to chill for a bit.
     getLogger("PIL").setLevel(WARNING)
     getLogger("boto3").setLevel(WARNING)
+    # URLLIB gets way too chatty
+    if verbose > 4:
+        getLogger("urllib3").setLevel(DEBUG)
+    else:
+        getLogger("urllib3").setLevel(INFO)
 
 
 def open_door(config, override=False):
@@ -133,8 +138,14 @@ def open_door(config, override=False):
     if override:
         with session_with_retry_policy() as Session:
             try:
-                Session.post(url=f"{config.api_gateway}/upload",
-                             data=dumps(generate_payload(config, config.cam.read_frame())),override="True")
+                image = None
+                while image is None:
+                    image = config.camera.read_frame()
+
+                data = dumps(generate_payload(config, image, override="True"))
+                response = Session.post(url=f"{config.api_gateway}/upload",
+                             data=data)
+                logger.debug(response.json())
             except Exception as e:
                 logger.debug(e)
                 logger.warning(f"Something went wrong when trying to send override {pin}. Check debug log.")
