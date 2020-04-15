@@ -127,9 +127,11 @@ def set_verbosity(verbose: int):
 
 
 def open_door(config, override=False):
+    if override:
+        logger.debug("Door triggered over by override. Uploading")
     pin = config.door_pin
     open_time = config.open_time
-    logger.debug(f"Triggering door opening on pin {pin}, override = {override}")
+
     GPIO.output(pin, 1)
     sleep(open_time)
     logger.debug(f"Door closing")

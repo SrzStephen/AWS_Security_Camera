@@ -19,7 +19,7 @@ MODEL_ENDPOINT_NAME = Knob(env_name="AWS_MODEL_ENDPOINT_NAME", default=False,
 
 AWS_API_GATEWAY = Knob(env_name="AWS_API_GATEWAY", default="https://m5k4jhx1ka.execute-api.us-east-1.amazonaws.com/dev/", description="AWS API Gateway Endpoint")
 
-MIN_PERCENTAGE_DIFF = Knob(env_name="MIN_PERCENTAGE_DIFF", default=10,
+MIN_PERCENTAGE_DIFF = Knob(env_name="MIN_PERCENTAGE_DIFF", default=50,
                            description="Minimum difference between frames to send")
 PERSON_PERCENTAGE = Knob(env_name="PERSON_PERCENTAGE", default=10,
                          description="Minimum probability to consider it being a person")
