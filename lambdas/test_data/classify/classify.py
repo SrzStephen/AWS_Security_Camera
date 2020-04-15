@@ -13,7 +13,7 @@ if __name__ == "__main__":
     with Path('data') as datapath:
         files = datapath.glob('*.jpeg')
         for file in files:
-            if randint(0, 10) == 1:
+            if randint(0, 2) == 1:
                 override = "True"
             else:
                 override = "False"

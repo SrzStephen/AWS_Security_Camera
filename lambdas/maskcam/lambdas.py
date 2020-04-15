@@ -249,7 +249,7 @@ class UploadLambda(Lambda):
             })
 
         # Get the activity type. Always save the image.
-        if data['override'] is "True":
+        if data['override'] == "True":
             activity = "override"
         else:
             if sagemaker_output['min_mask'] < data['mask_threshold']:

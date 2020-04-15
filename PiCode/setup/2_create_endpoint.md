@@ -3,7 +3,8 @@ This is most likely UI based
 
 
 # Request AWS Limits
-Before you'll be able to create the model you'll need to request your service limits to be increased, to allow you to host a ```ml.p3.2xlarge``` SageMaker hosting instence.
+Before you'll be able to create the model you'll need to request your service limits to be increased, to allow you to
+ host a ```ml.p3.2xlarge``` SageMaker hosting instance.
 ![](create_endpoint/support.png)
 ![](create_endpoint/support_case.png)
 ![](create_endpoint/service_limits2.png)

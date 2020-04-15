@@ -33,7 +33,7 @@ def get_serial_number():
 serial = get_serial_number()
 
 
-def generate_payload(config, image, override='false'):
+def generate_payload(config, image, override='False'):
     data = dict(photo_data=b64encode(image).decode('utf-8'),
                 timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
                 device_name=config.device_name,
@@ -135,7 +135,7 @@ def open_door(config, override=False):
         with session_with_retry_policy() as Session:
             try:
                 Session.post(url=f"{config.api_gateway}/upload",
-                             data=dumps(generate_payload(config, config.cam.read_frame())))
+                             data=dumps(generate_payload(config, config.cam.read_frame())),override="True")
             except Exception as e:
                 logger.debug(e)
                 logger.warning(f"Something went wrong when trying to send override {pin}. Check debug log.")

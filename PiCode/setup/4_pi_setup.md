@@ -152,8 +152,23 @@ aws greengrass create-connector-definition --name MyGreengrassConnectors --initi
         }
     ]
 }'
-```
 
+
+aws greengrass create-deployment --deployment-type NewDeployment --group_id {YOUR_GROUP_ID}
+```
+get your group version id with ```aws greengrass list-groups --query "reverse(sort_by(Groups, &CreationTimestamp))[0]""```
+using your group version id (shown as ```LatestVersion``) deploy this
+```
+aws greengrass create-deployment \
+--deployment-type NewDeployment \
+--group-id {YOUR_GROUP_ID}
+--group-version-id {YOUR_GROUP_VERSION_ID}
+```
+You should be able to log into your greengrass consol
+
+
+
+You shou
 ##TODO
 1. .env file
 2. Preload image
