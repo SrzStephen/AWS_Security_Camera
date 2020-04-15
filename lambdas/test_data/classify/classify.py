@@ -22,8 +22,8 @@ if __name__ == "__main__":
                 image = b64encode(fp.read()).decode('utf-8')
             data = dict(device_serial="ICU_Camera",
                         timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
-                        photo_data=image, person_threshold=50,
-                        mask_threshold=50,
+                        photo_data=image, person_threshold=20,
+                        mask_threshold=60,
                         override=override)
 
             response = requests.post(GATEWAY_URL, data=dumps(data))

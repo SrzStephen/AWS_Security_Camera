@@ -5,4 +5,5 @@ opencv-contrib-python==4.1.0.25
 attentive
 knobs
 pytz
-Wclick
+click
+Pillow

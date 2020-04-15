@@ -9,8 +9,10 @@ from json import dumps
 from time import sleep
 from attentive import quitevent
 from threading import Thread
-from datetime import datetime
+from base64 import b64encode
 import pytz
+from datetime import datetime
+from .settings import NO_MASK_THRESHOLD, PERSON_PERCENTAGE
 
 logger = getLogger(__name__)
 
@@ -26,6 +28,18 @@ def get_serial_number():
     except:
         cpuserial = "ERROR000000000"
         return cpuserial
+
+
+serial = get_serial_number()
+
+
+def generate_payload(config, image, override='false'):
+    data = dict(photo_data=b64encode(image).decode('utf-8'),
+                timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(),
+                device_name=config.device_name,
+                person_threshhold=PERSON_PERCENTAGE(), mask_treshhold=1 - NO_MASK_THRESHOLD(),
+                device_serial=serial, override=override)
+    return data
 
 
 class Pinger():
@@ -46,8 +60,7 @@ class Pinger():
                 break
             try:
                 self.session.post(self.gateway_url,
-                                  data=dumps(dict(device_serial=self.serial, device_name=self.device_name,
-                                                  pinged_on=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(), )))
+                                  data=dumps(dict(device_serial=self.serial, device_name=self.device_name)))
                 sleep(30)
             except Exception as e:
                 logger.debug(f"Error code {e} while pinging")
@@ -57,17 +70,15 @@ class Pinger():
         self.thread.start()
 
 
-def data_generator(cam_num, invert, threshold):
+def data_generator(Cam, threshold):
     images = []
     last_image = 0
-    with Camera(cam_num, invert) as Cam:
+    with Cam:
         # start getting images in a background thread
-        Cam.start_polling()
         # pre fill array
         images.append(Cam.read_frame())
         images.append(Cam.read_frame())
         # While we don't sigkill
-
 
         while not quitevent.is_set():
             if Cam.updated:
@@ -111,16 +122,20 @@ def set_verbosity(verbose: int):
     getLogger("boto3").setLevel(WARNING)
 
 
-def open_door(pin, endpoint, open_time, device_name):
-    logger.debug(f"Triggering door opening on pin {pin}")
+def open_door(config, override=False):
+    pin = config.door_pin
+    open_time = config.open_time
+    logger.debug(f"Triggering door opening on pin {pin}, override = {override}")
     GPIO.output(pin, 1)
     sleep(open_time)
     logger.debug(f"Door closing")
     GPIO.output(pin, 0)
-    try:
-        sess = session_with_retry_policy()
-        data = dict(device_name=device_name)
-        sess.post("/override", data=dumps(data))
-    except Exception as e:
-        logger.debug(e)
-        logger.warning(f"Something went wrong when trying to open the door on pin {pin}. Check debug log.")
+    # if its an override we also need to send image.
+    if override:
+        with session_with_retry_policy() as Session:
+            try:
+                Session.post(url=f"{config.api_gateway}/upload",
+                             data=dumps(generate_payload(config, config.cam.read_frame())))
+            except Exception as e:
+                logger.debug(e)
+                logger.warning(f"Something went wrong when trying to send override {pin}. Check debug log.")

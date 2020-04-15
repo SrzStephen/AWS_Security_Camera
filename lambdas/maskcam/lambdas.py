@@ -247,8 +247,8 @@ class UploadLambda(Lambda):
             return JsonResponse([], headers={
                 'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
             })
-        # If there was a person detected lets save that
-        # Get the activity type
+
+        # Get the activity type. Always save the image.
         if data['override'] is "True":
             activity = "override"
         else:
@@ -282,9 +282,11 @@ class UploadLambda(Lambda):
             people_in_frame=sagemaker_output['people_in_frame'],
             activity=activity
         )
+        prepared_response = dict(activity=activity, sagemaker_response=body_response
+                                 )
 
         # return the raw sagemaker output for the RPI to make the decisions
-        return JsonResponse(body_response, headers={
+        return JsonResponse(prepared_response, headers={
             'Access-Control-Allow-Origin': settings.ACCESS_CONTROL_ALLOW_ORIGIN,
         })
 

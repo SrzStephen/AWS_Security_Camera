@@ -2,31 +2,28 @@ import click
 from maskcam.settings import *
 from pathlib import Path
 from attentive import quitevent
-from time import time, sleep
 from json import dumps, JSONDecodeError
-from dataclasses import dataclass
-from typing import Generator
 from maskcam.common_fns import data_generator, session_with_retry_policy, set_verbosity
 from base64 import b64encode
 import RPi.GPIO as GPIO
 from time import time, sleep
 from maskcam.settings import DOOR_OUT_PIN, DOOR_OVERRIDE_BUTTON, OPEN_TIME, DEVICE_NAME
 from logging import getLogger
-from maskcam.common_fns import session_with_retry_policy, open_door, get_serial_number, Pinger
-from json import dumps
-import atexit
+from maskcam.common_fns import session_with_retry_policy, open_door, get_serial_number, Pinger, generate_payload
 import pytz
 from datetime import datetime
+from PIL import Image as PIL_IMAGE
+from maskcam.camera import Camera
 
 logger = getLogger(__name__)
 
 GPIO.setmode(GPIO.BOARD)
 
 
-
 class ConfigObject:
     def __init__(self):
         pass
+
 
 config_class = click.make_pass_decorator(ConfigObject, ensure=True)
 
@@ -38,43 +35,79 @@ config_class = click.make_pass_decorator(ConfigObject, ensure=True)
 @click.option('--device_name', default=DEVICE_NAME(), help=DEVICE_NAME.help(), type=str)
 @click.option('--minimum_difference', default=MIN_PERCENTAGE_DIFF(), help=MIN_PERCENTAGE_DIFF.help(), type=int)
 @click.option('--api_gateway', default=AWS_API_GATEWAY(), help=AWS_API_GATEWAY.help(), type=str)
-@click.option('-v','--verbose', default=1, count=True, help="Verbosity. More v, more verbose. Eg -vvv")
+@click.option('-v', '--verbose', default=1, count=True, help="Verbosity. More v, more verbose. Eg -vvv")
 @click.option('--door_button', default=DOOR_OVERRIDE_BUTTON(), help=DOOR_OVERRIDE_BUTTON.help())
 @click.option('--door_pin', default=DOOR_OUT_PIN(), help=DOOR_OUT_PIN.help())
+@click.option('--opening_time', default=OPEN_TIME(), help=OPEN_TIME().help())
 @config_class
 def cli(config, camera_number, camera_invert, device_name, minimum_difference, api_gateway, verbose, door_button,
-        door_pin):
+        door_pin, opening_time):
     GPIO.setup(door_button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(door_pin, GPIO.OUT)
 
-    callback_fn = lambda x: open_door(door_pin, api_gateway, open_time, device_name)
-    GPIO.add_event_detect(DOOR_OVERRIDE_BUTTON(), GPIO.RISING, callback=callback_fn)
-
     # setup logging
     set_verbosity(verbose)
-    # Set up lazy loading for image generator
-    gen = data_generator(cam_num=camera_number, invert=camera_invert, threshold=minimum_difference)
+    # Set up generator
+    config.camera = Camera(invert=camera_invert, camera_num=camera_number)
+    config.camera.start_polling()
+    gen = data_generator(Cam=config.camera, threshold=minimum_difference)
     config.camera_num = camera_number
     config.invert_cam = camera_invert
     config.device_name = device_name
     config.min_diff = minimum_difference
     config.gateway_url = api_gateway
     config.generator = gen
+    config.door_pin = door_pin
+    config.api_gateway = api_gateway
+    config.opening_time = opening_time
+
+    callback_fn = lambda x: open_door(config, action='override')
+    GPIO.add_event_detect(door_button, GPIO.RISING, callback=callback_fn)
+
+
+@cli.command("to_stdout")
+@config_class
+def to_stdout(config, file_path):
+    # Friendly debugging command.
+    serial = get_serial_number()
+    while not quitevent.is_set():
+        for image in config.generator:
+            with session_with_retry_policy() as Session:
+                data = generate_payload(config=config, image=image)
+                try:
+                    response = Session.post(f"{config.gateway_url}upload", data=dumps(data))
+                    print(response.json())
+                except Exception as e:
+                    logger.warning(f"got error {e} with payload {data} continuing anyway")
+                    pass
 
 
 @cli.command("to_file")
 @click.option("--file_path", default="/tmp/data", help="Directory to save predictions to", type=str)
 @config_class
 def to_file(config, file_path):
+    # Friendly debugging command.
+    serial = get_serial_number()
+    image_int = 0
     file_path = Path(file_path)
-    # record data to check, debugging command, does not put anything to aws
-    start = time()
+    if file_path.is_file():
+        raise FileExistsError(f"Inputted directory {file_path.absolute()} is a file")
+    if not file_path.exists():
+        file_path.mkdir(parents=True)
     while not quitevent.is_set():
-        if file_path.is_file():
-            raise FileExistsError(f"Inputted directory {file_path.abs()} is a file")
         for image in config.generator:
-            if not file_path.exists():
-                file_path.mkdir(parents=True)
+            image_int += 1
+            PIL_IMAGE.fromarray(image).save(f'{file_path.absolute()}/{image_int}.jpeg')
+            with session_with_retry_policy() as Session:
+                data = generate_payload(config=config, image=image)
+                try:
+                    response = Session.post(f"{config.gateway_url}upload", data=dumps(data))
+                    with open(f"{file_path.absolute()}/{image_int}.txt", 'wb') as fp:
+                        fp.write(response.content.decode('utf-8'))
+
+                except Exception as e:
+                    logger.warning(f"got error {e} with payload {data} continuing anyway")
+                    pass
 
 
 @cli.command("to_aws")
@@ -88,10 +121,7 @@ def to_aws(config):
             # We got an event where the camera was diffed.
             with session_with_retry_policy() as Session:
                 # Not strictly correct, not a binary image.
-                data = dict(photo_data=b64encode(image).decode('utf-8'),
-                            timestamp=datetime.utcnow().replace(tzinfo=pytz.utc).isoformat(), device_name=DEVICE_NAME(),
-                            person_threshhold=PERSON_PERCENTAGE(), mask_treshhold=1 - NO_MASK_THRESHOLD(),
-                            device_serial=serial)
+                data = generate_payload(config=config, image=image)
                 response = Session.post(f"{config.gateway_url}upload", data=dumps(data))
                 try:
                     response.raise_for_status()
@@ -102,27 +132,15 @@ def to_aws(config):
                     continue
                 try:
                     response = response.json()
+                # If we can't decode this to JSON then it's an invalid payload
                 except JSONDecodeError:
                     logger.warning(f"Invalid JSON response from classify \n {response.content}")
                     continue
-                # response will look like something in responses.py in test_stubs
-                # For this to turn on, everyone in the frame _MUST_ have a mask threshold
-                if len(response) > 0:
-                    detections_list = []
-                    for detection in response:
-                        # Check that it's detected a person
-                        if detection['name'] == "person":
-                            # Check that we're sure its a person
-                            if detection['percentage_probability'] > PERSON_PERCENTAGE():
-                                mask_detection = 1 - detection['classes']['no_mask']
-                                if mask_detection > NO_MASK_THRESHOLD():
-                                    detections_list.append(mask_detection)
-                    # If all the dections were positive then open door
-                    if len(detections_list) == len(response):
-                        open_door()
-                    else:
-                        logger.info(f"{len(response) - len(detections_list)} person in frame wasn't wearing a mask."
-                                    f"Not opening door")
+
+                if response.get('activity', 'violation') == 'compliant':
+                    logger.info("opening door")
+
+                    open_door(config.door_pin, config.api_gateway, config.opening_time, config.device_name)
 
 
 if __name__ == "__main__":
