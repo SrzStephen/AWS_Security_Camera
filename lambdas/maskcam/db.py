@@ -5,7 +5,7 @@
 
 import pytz
 import psycopg2
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 
 
@@ -27,18 +27,17 @@ class Repo:
 
     def insert_record(self, id: UUID, device_serial: str, recorded_on: datetime, min_confidence: float,
                       people_in_frame: int, activity: str):
-        print(activity)
         with self.connection.cursor() as cursor:
             cursor.execute(
                 """
                 INSERT INTO detections (
-                id,
-                device_serial,
-                created_on,
-                recorded_on,
-                min_confidence,
-                people_in_frame,
-                activity
+                    id,
+                    device_serial,
+                    created_on,
+                    recorded_on,
+                    min_confidence,
+                    people_in_frame,
+                    activity
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
@@ -162,3 +161,25 @@ class Repo:
                 'violation_count': ([0] * 7 + stats[1])[-7:],
                 'override_count': ([0] * 7 + stats[2])[-7:],
             }
+
+    def insert_ping(self, device_serial: str, device_name: str):
+        with self.connection.cursor() as cursor:
+            pinged_on = _utc_now()
+            cursor.execute(
+                """
+                INSERT INTO cameras (id, device_serial, device_name, pinged_on)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (device_serial)
+                DO UPDATE SET device_serial = %s, device_name = %s, pinged_on = %s
+                """,
+                (
+                    str(uuid4()),
+                    device_serial,
+                    device_name,
+                    pinged_on,
+                    device_serial,
+                    device_name,
+                    pinged_on,
+                )
+            )
+            self.connection.commit()

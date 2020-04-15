@@ -44,6 +44,11 @@ class RatingSchema(Schema):
     rating = fields.Integer(required=True)
 
 
+class PingSchema(Schema):
+    device_serial = fields.String(required=True)
+    device_name = fields.String(required=True)
+
+
 def apply_schema(schema: Type[Schema], data: Union[str, dict]):
     if isinstance(data, str):
         return schema().loads(data)

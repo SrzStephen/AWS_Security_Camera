@@ -7,7 +7,7 @@
 CREATE TABLE cameras
 (
     id            uuid                     NOT NULL PRIMARY KEY,
-    device_serial character varying(255)   NOT NULL,
+    device_serial character varying(255)   NOT NULL UNIQUE,
     device_name   character varying(255)   NOT NULL,
     pinged_on     timestamp with time zone NOT NULL
 );
